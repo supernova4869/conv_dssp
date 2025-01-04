@@ -8,9 +8,14 @@ use ndarray::Array2;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let dssp = fs::read_to_string(&args[1]).unwrap();
-    // let mut buf: String = String::new();
-    // dssp.read_to_string(&mut buf).unwrap();
+    let dssp = if args.len() > 1 {
+        &args[1]
+    } else {
+        "dssp.dat"
+    };
+    println!("Reading dssp.dat...");
+    let dssp = fs::read_to_string(dssp).unwrap();
+    println!("Converting dssp.dat...");
     let dssp_m: Vec<&str> = dssp.split("\n").filter(|l| !l.trim().is_empty()).collect();
     let ln = dssp_m.len();
     let dssp: Vec<&str> = dssp.split("").filter(|l| !l.trim().is_empty()).collect();
@@ -28,7 +33,9 @@ fn main() {
     replace_map.insert("=", "Chain_Separator");
     let new_ss_matrix = ss_matrix.mapv(|x| replace_map[x]);
 
+    println!("Writing new dssp file ss.csv...");
     write_array_to_csv_manual(&new_ss_matrix, "ss.csv");
+    println!("Writing dssp summary scount.csv...");
     scount(&new_ss_matrix, "scount.csv");
 }
 
@@ -56,88 +63,3 @@ fn write_array_to_csv_manual(array: &Array2<&str>, file_path: &str) {
         writeln!(file, "{}", line).unwrap();
     }
 }
-
-
-// using DataFrames
-// using CSV
-// using Utils
-
-// export read_xpm, xpm2csv, convert_ss_table!
-// export XPM
-
-// mutable struct XPM
-//     xpmdata::DataFrame
-//     xaxis
-//     yaxis
-//     xlabel
-//     ylabel
-// end
-
-// function read_xpm(xpmfilename::String)
-//     println("Reading $xpmfilename...")
-//     xpmfile = readlines(xpmfilename)
-//     xpm_index = findfirst(x -> contains(x, "static char *"), xpmfile)
-//     params = split(match(r"\"(.*)\"", xpmfile[xpm_index + 1]).captures[1])
-//     width, height, ncolors, cpp = parse.(Int32, params[1:4])  # 颜色数, 每个像素的字符数
-//     # color_table structure: 
-//     # ' ' => {"c" => "red", "m" => "white", "s" => "light_color"}
-//     # 'Y' => {"c" => "green", "m" => "black", "s" => "lines_in_mix"}
-//     # '+' => {"c" => "yellow", "m" => "white", "s" => "lines_in_dark"}
-//     color_table = Dict()
-//     for i in 1:ncolors
-//         line = match(r"\"(.*?)\"", xpmfile[xpm_index + i + 1]).captures[1]
-//         # 提取对应每种关键字的颜色定义
-//         cs = reshape(split(line[2:end]), 2, :)
-//         color_def = [(cs[1, c] => cs[2, c]) for c in 1:size(cs, 2)]
-//         push!(color_table, line[1] => color_def)
-//     end
-//     xpm_data_index_start = findfirst(x -> match(r"^\".*", x) !== nothing, xpmfile[xpm_index + ncolors + 2:end])
-//     xpm_data = xpmfile[xpm_data_index_start + xpm_index + ncolors + 1:xpm_data_index_start + xpm_index + ncolors + height]
-//     xpm_data = [x.captures[1] for x in match.(r"\"(.*?)\"", xpm_data)]   # 字符串数组
-//     xpm_matrix = fill("", width, height)   # 矩阵, 纵向为x, 横向为y
-//     for i in 1:height
-//         for j in 1:width
-//             xpm_matrix[j, i] = xpm_data[i][(j - 1) * cpp + 1:j * cpp]
-//         end
-//     end
-//     # 坐标轴
-//     xaxis = []
-//     for x in filter(x -> contains(x, "/* x-axis:"), xpmfile)
-//         append!(xaxis, parse.(Float64, split(x)[3:end - 1]))
-//     end
-//     yaxis = []
-//     for y in filter(y -> contains(y, "/* y-axis:"), xpmfile)
-//         append!(yaxis, parse.(Float64, split(y)[3:end - 1]))
-//     end
-//     # label
-//     xlabel_index = findfirst(x -> contains(x, "/* x-label"), xpmfile)
-//     xlabel = match(r"/* x-label: \"(.*)\".*", xpmfile[xlabel_index]).captures[1]
-//     ylabel_index = findfirst(x -> contains(x, "/* y-label"), xpmfile)
-//     ylabel = match(r"/* y-label: \"(.*)\".*", xpmfile[ylabel_index]).captures[1]
-//     finish_hint("Finished reading $xpmfilename.\n")
-//     return XPM(DataFrame([xaxis xpm_matrix], insert!(Symbol.(yaxis), 1, Symbol(xlabel))), xaxis, yaxis, xlabel, ylabel)
-// end
-
-// function convert_ss_table!(xpm::XPM)
-//     color_table = Dict(
-//         "~" => "Coil",
-//         "E" => "B-Sheet",
-//         "B" => "B-Bridge",
-//         "P" => "PPII-Helix",
-//         "S" => "Bend",
-//         "T" => "Turn",
-//         "H" => "A-Helix",
-//         "I" => "5-Helix",
-//         "G" => "3-Helix",
-//         "=" => "Chain_Separator"
-//     )
-//     for (k, v) in color_table
-//         xpm.xpmdata[!, :] .= ifelse.(xpm.xpmdata[!, :] .== k, v, xpm.xpmdata[!, :])
-//     end
-// end
-
-// function xpm2csv(xpm::XPM, path::AbstractString)
-//     CSV.write(path, xpm.xpmdata)
-// end
-
-// end # module
