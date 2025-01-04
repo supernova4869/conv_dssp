@@ -1,0 +1,9 @@
+[package]
+name = "conv_dssp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+polars = { version = "0.45.1", features = ["lazy"]}
+chrono = "0.4.39"
+ndarray = "0.16.1"
